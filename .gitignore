@@ -205,3 +205,90 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+# latex
+## Core LaTeX auxiliary files
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.fot
+*.cb
+*.cb2
+
+## Intermediate documents
+*.dvi
+*.xdv
+*.bbl
+*.bcf
+*.blg
+*-blx.aux
+*-blx.bib
+
+## SyncTeX
+*.synctex
+*.synctex.gz
+*.synctex.gz(busy)
+
+## Latexmk
+*.fdb_latexmk
+*.pdfsync
+
+## Bibliography
+*.run.xml
+
+## Indexing
+*.idx
+*.ilg
+*.ind
+*.ist
+
+## Glossaries
+*.acn
+*.acr
+*.alg
+*.glg
+*.glo
+*.gls
+*.flg
+
+## Acronyms
+*.slg
+*.slo
+*.sls
+
+## Misc
+*.dvi
+*.nav
+*.snm
+*.vrb
+
+## Editors
+# TeXShop
+*.texpadtmp
+
+# TeXworks
+# *.pdf
+
+# Kile
+*.backup
+
+# WinEdt
+*.bak
+
+# LyX
+*.lyx~
+
+# Others
+*.tmp
+*.bak
+*.swp
+*~
+
+## Output
+# *.pdf
