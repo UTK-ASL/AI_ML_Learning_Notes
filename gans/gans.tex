@@ -1,0 +1,243 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\title{Generative Adversarial Networks: Theory and Practice}
+\author{AI/ML Learning Notes}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+Generative Adversarial Networks (GANs) represent a breakthrough in generative modeling, introduced by Ian Goodfellow et al. in 2014. GANs employ an adversarial training paradigm where two neural networks—the generator and discriminator—compete in a game-theoretic framework.
+
+\section{Mathematical Framework}
+
+\subsection{The Minimax Game}
+
+The fundamental objective of GANs is formulated as a minimax game:
+
+\begin{equation}
+\min_G \max_D V(D, G) = \mathbb{E}_{x \sim p_{data}(x)}[\log D(x)] + \mathbb{E}_{z \sim p_z(z)}[\log(1 - D(G(z)))]
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $G: \mathcal{Z} \rightarrow \mathcal{X}$ is the generator network
+    \item $D: \mathcal{X} \rightarrow [0, 1]$ is the discriminator network
+    \item $x \sim p_{data}(x)$ are samples from the real data distribution
+    \item $z \sim p_z(z)$ are samples from a prior noise distribution
+    \item $D(x)$ represents the probability that $x$ is from the real data
+    \item $G(z)$ is the generated sample from noise $z$
+\end{itemize}
+
+\subsection{Optimal Discriminator}
+
+For a fixed generator $G$, the optimal discriminator $D^*$ is:
+
+\begin{equation}
+D^*(x) = \frac{p_{data}(x)}{p_{data}(x) + p_g(x)}
+\end{equation}
+
+where $p_g$ is the distribution induced by the generator.
+
+\subsection{Training Dynamics}
+
+The training alternates between:
+
+\textbf{Discriminator Update:}
+\begin{equation}
+\max_D \mathbb{E}_{x \sim p_{data}}[\log D(x)] + \mathbb{E}_{z \sim p_z}[\log(1 - D(G(z)))]
+\end{equation}
+
+\textbf{Generator Update:}
+\begin{equation}
+\min_G \mathbb{E}_{z \sim p_z}[\log(1 - D(G(z)))]
+\end{equation}
+
+In practice, we maximize $\log D(G(z))$ instead of minimizing $\log(1 - D(G(z)))$ to provide stronger gradients early in training.
+
+\section{Deep Convolutional GAN (DCGAN)}
+
+DCGAN introduced architectural guidelines for stable training:
+
+\subsection{Architecture Principles}
+
+\begin{enumerate}
+    \item Replace pooling layers with strided convolutions (discriminator) and fractional-strided convolutions (generator)
+    \item Use batch normalization in both networks
+    \item Remove fully connected hidden layers
+    \item Use ReLU activation in generator (except output layer using Tanh)
+    \item Use LeakyReLU activation in discriminator
+\end{enumerate}
+
+\subsection{Generator Architecture}
+
+\begin{equation}
+G(z): z \in \mathbb{R}^{n_z} \rightarrow x \in \mathbb{R}^{H \times W \times C}
+\end{equation}
+
+Typical layer progression:
+\begin{itemize}
+    \item Linear: $\mathbb{R}^{n_z} \rightarrow \mathbb{R}^{4 \times 4 \times 1024}$
+    \item ConvTranspose2d: $4 \times 4 \times 1024 \rightarrow 8 \times 8 \times 512$
+    \item ConvTranspose2d: $8 \times 8 \times 512 \rightarrow 16 \times 16 \times 256$
+    \item ConvTranspose2d: $16 \times 16 \times 256 \rightarrow 32 \times 32 \times 128$
+    \item ConvTranspose2d: $32 \times 32 \times 128 \rightarrow 64 \times 64 \times 3$
+\end{itemize}
+
+\section{Wasserstein GAN (WGAN)}
+
+WGAN addresses training instability using the Wasserstein distance (Earth Mover's Distance).
+
+\subsection{Wasserstein Distance}
+
+\begin{equation}
+W(p_r, p_g) = \inf_{\gamma \in \Pi(p_r, p_g)} \mathbb{E}_{(x, y) \sim \gamma}[\|x - y\|]
+\end{equation}
+
+Using Kantorovich-Rubinstein duality:
+
+\begin{equation}
+W(p_r, p_g) = \sup_{\|f\|_L \leq 1} \mathbb{E}_{x \sim p_r}[f(x)] - \mathbb{E}_{x \sim p_g}[f(x)]
+\end{equation}
+
+\subsection{WGAN Objective}
+
+\begin{equation}
+\min_G \max_{D \in \mathcal{D}} \mathbb{E}_{x \sim p_{data}}[D(x)] - \mathbb{E}_{z \sim p_z}[D(G(z))]
+\end{equation}
+
+where $\mathcal{D}$ is the set of 1-Lipschitz functions.
+
+\subsection{Weight Clipping}
+
+To enforce Lipschitz constraint, weights are clipped:
+
+\begin{equation}
+w \leftarrow \text{clip}(w, -c, c)
+\end{equation}
+
+where $c$ is a small constant (e.g., 0.01).
+
+\section{Gradient Penalty (WGAN-GP)}
+
+WGAN-GP replaces weight clipping with a gradient penalty:
+
+\begin{equation}
+\mathcal{L} = \mathbb{E}_{\tilde{x} \sim p_g}[D(\tilde{x})] - \mathbb{E}_{x \sim p_r}[D(x)] + \lambda \mathbb{E}_{\hat{x} \sim p_{\hat{x}}}[(\|\nabla_{\hat{x}} D(\hat{x})\|_2 - 1)^2]
+\end{equation}
+
+where $\hat{x} = \epsilon x + (1 - \epsilon)\tilde{x}$ with $\epsilon \sim \text{Uniform}[0, 1]$.
+
+\section{Conditional GAN (cGAN)}
+
+Conditional GANs incorporate additional information $y$ (e.g., class labels):
+
+\begin{equation}
+\min_G \max_D V(D, G) = \mathbb{E}_{x \sim p_{data}}[\log D(x | y)] + \mathbb{E}_{z \sim p_z}[\log(1 - D(G(z | y)))]
+\end{equation}
+
+\section{Loss Functions}
+
+\subsection{Non-saturating GAN Loss}
+
+\begin{equation}
+\mathcal{L}_D = -\mathbb{E}_{x \sim p_{data}}[\log D(x)] - \mathbb{E}_{z \sim p_z}[\log(1 - D(G(z)))]
+\end{equation}
+
+\begin{equation}
+\mathcal{L}_G = -\mathbb{E}_{z \sim p_z}[\log D(G(z))]
+\end{equation}
+
+\subsection{Least Squares GAN (LSGAN)}
+
+\begin{equation}
+\mathcal{L}_D = \frac{1}{2}\mathbb{E}_{x \sim p_{data}}[(D(x) - 1)^2] + \frac{1}{2}\mathbb{E}_{z \sim p_z}[D(G(z))^2]
+\end{equation}
+
+\begin{equation}
+\mathcal{L}_G = \frac{1}{2}\mathbb{E}_{z \sim p_z}[(D(G(z)) - 1)^2]
+\end{equation}
+
+\section{Evaluation Metrics}
+
+\subsection{Inception Score (IS)}
+
+\begin{equation}
+IS = \exp(\mathbb{E}_{x \sim p_g}[D_{KL}(p(y|x) \| p(y))])
+\end{equation}
+
+\subsection{Fréchet Inception Distance (FID)}
+
+\begin{equation}
+FID = \|\mu_r - \mu_g\|^2 + \text{Tr}(\Sigma_r + \Sigma_g - 2(\Sigma_r \Sigma_g)^{1/2})
+\end{equation}
+
+where $\mu_r, \Sigma_r$ and $\mu_g, \Sigma_g$ are mean and covariance of real and generated features.
+
+\section{Training Techniques}
+
+\subsection{Batch Normalization}
+
+\begin{equation}
+\hat{x} = \frac{x - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}}
+\end{equation}
+
+\begin{equation}
+y = \gamma \hat{x} + \beta
+\end{equation}
+
+\subsection{Spectral Normalization}
+
+Normalize weight matrix $W$ by its largest singular value:
+
+\begin{equation}
+\bar{W} = \frac{W}{\sigma(W)}
+\end{equation}
+
+where $\sigma(W)$ is the largest singular value of $W$.
+
+\section{Applications}
+
+\subsection{Image-to-Image Translation}
+
+\begin{equation}
+\mathcal{L}_{cGAN} = \mathbb{E}_{x, y}[\log D(x, y)] + \mathbb{E}_{x, z}[\log(1 - D(x, G(x, z)))]
+\end{equation}
+
+\subsection{CycleGAN}
+
+For unpaired translation with cycle consistency:
+
+\begin{equation}
+\mathcal{L}_{cyc} = \mathbb{E}_{x \sim p_X}[\|F(G(x)) - x\|_1] + \mathbb{E}_{y \sim p_Y}[\|G(F(y)) - y\|_1]
+\end{equation}
+
+\section{Conclusion}
+
+GANs have revolutionized generative modeling, enabling unprecedented quality in synthetic data generation. Understanding the mathematical foundations, architectural principles, and training techniques is crucial for successfully applying GANs to real-world problems.
+
+\section{References}
+
+\begin{enumerate}
+    \item Goodfellow, I., et al. (2014). Generative Adversarial Nets. NIPS.
+    \item Radford, A., et al. (2015). Unsupervised Representation Learning with Deep Convolutional GANs.
+    \item Arjovsky, M., et al. (2017). Wasserstein GAN. ICML.
+    \item Gulrajani, I., et al. (2017). Improved Training of Wasserstein GANs. NIPS.
+    \item Karras, T., et al. (2019). A Style-Based Generator Architecture for GANs. CVPR.
+    \item Zhu, J., et al. (2017). Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks. ICCV.
+\end{enumerate}
+
+\end{document}

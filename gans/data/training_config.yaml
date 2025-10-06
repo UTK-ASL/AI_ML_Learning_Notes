@@ -1,0 +1,43 @@
+# Sample training configuration for GANs
+# This file contains hyperparameters and settings for training different GAN variants
+
+# Vanilla GAN
+vanilla_gan:
+  latent_dim: 100
+  batch_size: 64
+  learning_rate: 0.0002
+  beta1: 0.5
+  beta2: 0.999
+  num_epochs: 100
+
+# DCGAN
+dcgan:
+  latent_dim: 100
+  batch_size: 128
+  learning_rate: 0.0002
+  beta1: 0.5
+  beta2: 0.999
+  num_epochs: 200
+  image_size: 64
+  num_channels: 3
+
+# WGAN-GP
+wgan_gp:
+  latent_dim: 100
+  batch_size: 64
+  learning_rate: 0.0001
+  beta1: 0.5
+  beta2: 0.9
+  num_epochs: 200
+  lambda_gp: 10
+  n_critic: 5
+
+# Conditional GAN
+cgan:
+  latent_dim: 100
+  num_classes: 10
+  batch_size: 64
+  learning_rate: 0.0002
+  beta1: 0.5
+  beta2: 0.999
+  num_epochs: 100
