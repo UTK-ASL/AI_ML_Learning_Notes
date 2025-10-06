@@ -1,0 +1,11 @@
+text,label
+"The transformer architecture revolutionized natural language processing.",1
+"Attention mechanisms allow models to focus on relevant parts of input.",1
+"BERT uses bidirectional transformers for better context understanding.",1
+"GPT models are autoregressive and generate text sequentially.",1
+"Vision transformers apply the same principles to image classification.",1
+"Self-attention computes relationships between all positions in a sequence.",1
+"Positional encodings add information about token positions.",1
+"Multi-head attention enables the model to attend to different representation subspaces.",1
+"The scaled dot-product attention prevents gradient issues.",1
+"Transformers can be parallelized more effectively than RNNs.",1

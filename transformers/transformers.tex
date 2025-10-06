@@ -1,0 +1,211 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\title{Transformers: Attention Mechanisms and Architecture}
+\author{AI/ML Learning Notes}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+Transformers represent a paradigm shift in sequence modeling, moving away from recurrent architectures to attention-based mechanisms. Introduced by Vaswani et al. in 2017, transformers have become the foundation of modern natural language processing and are increasingly applied to computer vision and other domains.
+
+\section{Mathematical Foundations}
+
+\subsection{Attention Mechanism}
+
+The core innovation of transformers is the scaled dot-product attention mechanism:
+
+\begin{equation}
+\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $Q \in \mathbb{R}^{n \times d_k}$ is the query matrix
+    \item $K \in \mathbb{R}^{m \times d_k}$ is the key matrix
+    \item $V \in \mathbb{R}^{m \times d_v}$ is the value matrix
+    \item $d_k$ is the dimension of keys/queries
+    \item $d_v$ is the dimension of values
+    \item $n$ is the number of queries
+    \item $m$ is the number of key-value pairs
+\end{itemize}
+
+The scaling factor $\frac{1}{\sqrt{d_k}}$ prevents the dot products from growing too large, which would push the softmax function into regions with extremely small gradients.
+
+\subsection{Multi-Head Attention}
+
+Multi-head attention allows the model to jointly attend to information from different representation subspaces:
+
+\begin{equation}
+\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \ldots, \text{head}_h)W^O
+\end{equation}
+
+where each head is computed as:
+
+\begin{equation}
+\text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V)
+\end{equation}
+
+The projection matrices are:
+\begin{itemize}
+    \item $W_i^Q \in \mathbb{R}^{d_{model} \times d_k}$
+    \item $W_i^K \in \mathbb{R}^{d_{model} \times d_k}$
+    \item $W_i^V \in \mathbb{R}^{d_{model} \times d_v}$
+    \item $W^O \in \mathbb{R}^{hd_v \times d_{model}}$
+\end{itemize}
+
+\subsection{Positional Encoding}
+
+Since transformers don't have inherent notion of sequence order, positional encodings are added to input embeddings:
+
+\begin{equation}
+PE_{(pos, 2i)} = \sin\left(\frac{pos}{10000^{2i/d_{model}}}\right)
+\end{equation}
+
+\begin{equation}
+PE_{(pos, 2i+1)} = \cos\left(\frac{pos}{10000^{2i/d_{model}}}\right)
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $pos$ is the position in the sequence
+    \item $i$ is the dimension index
+    \item $d_{model}$ is the model dimension
+\end{itemize}
+
+\section{Architecture Details}
+
+\subsection{Encoder Layer}
+
+Each encoder layer consists of:
+
+\begin{enumerate}
+    \item Multi-head self-attention mechanism
+    \item Add \& Norm (residual connection + layer normalization)
+    \item Position-wise feed-forward network
+    \item Add \& Norm
+\end{enumerate}
+
+The feed-forward network is defined as:
+
+\begin{equation}
+\text{FFN}(x) = \max(0, xW_1 + b_1)W_2 + b_2
+\end{equation}
+
+\subsection{Decoder Layer}
+
+Each decoder layer extends the encoder with:
+
+\begin{enumerate}
+    \item Masked multi-head self-attention
+    \item Add \& Norm
+    \item Multi-head cross-attention (attending to encoder output)
+    \item Add \& Norm
+    \item Position-wise feed-forward network
+    \item Add \& Norm
+\end{enumerate}
+
+\subsection{Layer Normalization}
+
+Layer normalization normalizes across features:
+
+\begin{equation}
+\text{LayerNorm}(x) = \gamma \odot \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} + \beta
+\end{equation}
+
+where $\mu$ and $\sigma^2$ are the mean and variance computed across the feature dimension.
+
+\section{Training Considerations}
+
+\subsection{Loss Function}
+
+For language modeling, the cross-entropy loss is used:
+
+\begin{equation}
+\mathcal{L} = -\sum_{t=1}^{T} \log P(y_t | y_{<t}, x)
+\end{equation}
+
+\subsection{Optimization}
+
+The Adam optimizer is typically used with learning rate warm-up:
+
+\begin{equation}
+lr = d_{model}^{-0.5} \cdot \min(step^{-0.5}, step \cdot warmup\_steps^{-1.5})
+\end{equation}
+
+\section{Complexity Analysis}
+
+\subsection{Computational Complexity}
+
+\begin{itemize}
+    \item Self-attention: $O(n^2 \cdot d)$ where $n$ is sequence length, $d$ is model dimension
+    \item Feed-forward: $O(n \cdot d^2)$
+    \item Total per layer: $O(n^2 \cdot d + n \cdot d^2)$
+\end{itemize}
+
+\subsection{Memory Complexity}
+
+The attention mechanism requires $O(n^2)$ memory for the attention matrix, which becomes a bottleneck for long sequences.
+
+\section{Variants and Extensions}
+
+\subsection{BERT (Bidirectional Encoder Representations from Transformers)}
+
+Uses only the encoder stack with masked language modeling and next sentence prediction objectives.
+
+\subsection{GPT (Generative Pre-trained Transformer)}
+
+Uses only the decoder stack with causal language modeling for autoregressive generation.
+
+\subsection{Vision Transformers (ViT)}
+
+Applies transformers to image patches, treating them as tokens in a sequence.
+
+\section{Practical Considerations}
+
+\subsection{Hyperparameters}
+
+Common configurations:
+\begin{itemize}
+    \item $d_{model} = 512$ or $768$
+    \item $h = 8$ or $12$ heads
+    \item $d_k = d_v = d_{model}/h$
+    \item $d_{ff} = 2048$ or $3072$ (feed-forward dimension)
+    \item Number of layers: 6-24
+\end{itemize}
+
+\subsection{Regularization}
+
+\begin{itemize}
+    \item Dropout applied to attention weights and feed-forward outputs
+    \item Label smoothing for regularization
+    \item Weight decay in optimizer
+\end{itemize}
+
+\section{Conclusion}
+
+Transformers have revolutionized deep learning by demonstrating that attention mechanisms alone, without recurrence or convolution, can achieve state-of-the-art results across various domains. Their parallel processing capability and ability to capture long-range dependencies make them the architecture of choice for modern AI systems.
+
+\section{References}
+
+\begin{enumerate}
+    \item Vaswani, A., et al. (2017). Attention is all you need. In NIPS.
+    \item Devlin, J., et al. (2018). BERT: Pre-training of deep bidirectional transformers for language understanding. arXiv preprint.
+    \item Radford, A., et al. (2019). Language models are unsupervised multitask learners.
+    \item Dosovitskiy, A., et al. (2020). An image is worth 16x16 words: Transformers for image recognition at scale. ICLR.
+\end{enumerate}
+
+\end{document}

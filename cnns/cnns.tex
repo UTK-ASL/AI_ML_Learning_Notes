@@ -1,0 +1,305 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\title{Convolutional Neural Networks: Theory and Implementation}
+\author{AI/ML Learning Notes}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+Convolutional Neural Networks (CNNs) are a specialized architecture designed to process grid-structured data, particularly images. By exploiting the spatial structure of data, CNNs achieve superior performance in computer vision tasks while maintaining parameter efficiency through weight sharing.
+
+\section{Mathematical Foundations}
+
+\subsection{Discrete Convolution}
+
+The discrete 2D convolution operation for an input $I$ and kernel $K$ is defined as:
+
+\begin{equation}
+(I * K)[i, j] = \sum_{m} \sum_{n} I[i+m, j+n] \cdot K[m, n]
+\end{equation}
+
+In practice, we often use cross-correlation:
+
+\begin{equation}
+(I \star K)[i, j] = \sum_{m} \sum_{n} I[i-m, j-n] \cdot K[m, n]
+\end{equation}
+
+\subsection{Multi-Channel Convolution}
+
+For input with $C_{in}$ channels and output with $C_{out}$ channels:
+
+\begin{equation}
+Y[c_{out}, i, j] = b[c_{out}] + \sum_{c_{in}=1}^{C_{in}} \sum_{m} \sum_{n} X[c_{in}, i+m, j+n] \cdot W[c_{out}, c_{in}, m, n]
+\end{equation}
+
+where $W$ are the learnable weights and $b$ are biases.
+
+\subsection{Output Dimensions}
+
+For a convolutional layer with:
+\begin{itemize}
+    \item Input size: $H_{in} \times W_{in}$
+    \item Kernel size: $K_H \times K_W$
+    \item Stride: $S$
+    \item Padding: $P$
+\end{itemize}
+
+The output dimensions are:
+
+\begin{equation}
+H_{out} = \left\lfloor \frac{H_{in} + 2P - K_H}{S} \right\rfloor + 1
+\end{equation}
+
+\begin{equation}
+W_{out} = \left\lfloor \frac{W_{in} + 2P - K_W}{S} \right\rfloor + 1
+\end{equation}
+
+\subsection{Receptive Field}
+
+The receptive field of a neuron is the region of the input that influences its activation. For a sequence of convolutional layers, the effective receptive field grows as:
+
+\begin{equation}
+RF_l = RF_{l-1} + (K_l - 1) \prod_{i=1}^{l-1} S_i
+\end{equation}
+
+where $K_l$ is the kernel size at layer $l$ and $S_i$ is the stride at layer $i$.
+
+\section{Layer Types}
+
+\subsection{Convolutional Layer}
+
+The forward pass computes:
+
+\begin{equation}
+a^{[l]} = g(W^{[l]} * a^{[l-1]} + b^{[l]})
+\end{equation}
+
+where $g$ is the activation function (typically ReLU).
+
+\subsection{Pooling Layer}
+
+\textbf{Max Pooling:}
+\begin{equation}
+y[i, j] = \max_{(m,n) \in \mathcal{R}(i,j)} x[m, n]
+\end{equation}
+
+\textbf{Average Pooling:}
+\begin{equation}
+y[i, j] = \frac{1}{|\mathcal{R}(i,j)|} \sum_{(m,n) \in \mathcal{R}(i,j)} x[m, n]
+\end{equation}
+
+where $\mathcal{R}(i,j)$ is the pooling region.
+
+\subsection{Batch Normalization}
+
+Normalize activations across the batch:
+
+\begin{equation}
+\hat{x}_i = \frac{x_i - \mu_\mathcal{B}}{\sqrt{\sigma_\mathcal{B}^2 + \epsilon}}
+\end{equation}
+
+\begin{equation}
+y_i = \gamma \hat{x}_i + \beta
+\end{equation}
+
+where $\mu_\mathcal{B}$ and $\sigma_\mathcal{B}^2$ are batch statistics, and $\gamma, \beta$ are learnable parameters.
+
+\section{Backpropagation in CNNs}
+
+\subsection{Gradient of Convolution}
+
+The gradient with respect to the input:
+
+\begin{equation}
+\frac{\partial \mathcal{L}}{\partial I} = \frac{\partial \mathcal{L}}{\partial O} * K_{rot}
+\end{equation}
+
+where $K_{rot}$ is the kernel rotated by 180°.
+
+The gradient with respect to the kernel:
+
+\begin{equation}
+\frac{\partial \mathcal{L}}{\partial K} = I * \frac{\partial \mathcal{L}}{\partial O}
+\end{equation}
+
+\subsection{Gradient of Pooling}
+
+For max pooling, gradient flows only through the maximum element:
+
+\begin{equation}
+\frac{\partial \mathcal{L}}{\partial x_{i,j}} = \begin{cases}
+\frac{\partial \mathcal{L}}{\partial y_{k,l}} & \text{if } (i,j) = \arg\max_{\mathcal{R}(k,l)} x \\
+0 & \text{otherwise}
+\end{cases}
+\end{equation}
+
+\section{Classic Architectures}
+
+\subsection{LeNet-5}
+
+Architecture: Conv(6, 5×5) → Pool → Conv(16, 5×5) → Pool → FC(120) → FC(84) → FC(10)
+
+Total parameters: approximately 60K
+
+\subsection{AlexNet}
+
+Key innovations:
+\begin{itemize}
+    \item ReLU activation: $f(x) = \max(0, x)$
+    \item Dropout regularization: $p_{drop} = 0.5$
+    \item Data augmentation
+    \item GPU training with parallelization
+\end{itemize}
+
+\subsection{VGGNet}
+
+Uses uniform 3×3 convolutions. Two 3×3 convolutions have the same receptive field as one 5×5, but with fewer parameters:
+
+\begin{equation}
+\text{Params}_{3 \times 3 \times 2} = 2(3 \times 3 \times C^2) = 18C^2
+\end{equation}
+
+\begin{equation}
+\text{Params}_{5 \times 5} = 5 \times 5 \times C^2 = 25C^2
+\end{equation}
+
+\subsection{ResNet (Residual Networks)}
+
+Residual block:
+
+\begin{equation}
+y = \mathcal{F}(x, \{W_i\}) + x
+\end{equation}
+
+where $\mathcal{F}$ represents the residual mapping. This formulation allows gradients to flow directly through skip connections:
+
+\begin{equation}
+\frac{\partial \mathcal{L}}{\partial x} = \frac{\partial \mathcal{L}}{\partial y} \left(1 + \frac{\partial \mathcal{F}}{\partial x}\right)
+\end{equation}
+
+\subsection{Inception Module}
+
+Parallel convolutions with different kernel sizes:
+
+\begin{equation}
+\text{Output} = \text{Concat}[Conv_{1 \times 1}, Conv_{3 \times 3}, Conv_{5 \times 5}, Pool_{3 \times 3}]
+\end{equation}
+
+1×1 convolutions reduce dimensionality:
+
+\begin{equation}
+\text{Params}_{1 \times 1} = C_{in} \times C_{out}
+\end{equation}
+
+\section{Optimization Techniques}
+
+\subsection{Weight Initialization}
+
+\textbf{He initialization} (for ReLU):
+\begin{equation}
+W \sim \mathcal{N}\left(0, \sqrt{\frac{2}{n_{in}}}\right)
+\end{equation}
+
+\textbf{Xavier initialization} (for tanh/sigmoid):
+\begin{equation}
+W \sim \mathcal{U}\left(-\sqrt{\frac{6}{n_{in} + n_{out}}}, \sqrt{\frac{6}{n_{in} + n_{out}}}\right)
+\end{equation}
+
+\subsection{Learning Rate Schedules}
+
+\textbf{Step decay:}
+\begin{equation}
+\eta_t = \eta_0 \cdot \gamma^{\lfloor t/k \rfloor}
+\end{equation}
+
+\textbf{Cosine annealing:}
+\begin{equation}
+\eta_t = \eta_{min} + \frac{1}{2}(\eta_{max} - \eta_{min})\left(1 + \cos\left(\frac{t\pi}{T}\right)\right)
+\end{equation}
+
+\section{Regularization}
+
+\subsection{Dropout}
+
+During training:
+\begin{equation}
+y = \frac{1}{1-p} \cdot m \odot x
+\end{equation}
+
+where $m \sim \text{Bernoulli}(1-p)$ is a binary mask.
+
+\subsection{Data Augmentation}
+
+Transformation invariance through:
+\begin{itemize}
+    \item Random crops and flips
+    \item Color jittering
+    \item Mixup: $\tilde{x} = \lambda x_i + (1-\lambda)x_j$
+    \item Cutout: randomly masking patches
+\end{itemize}
+
+\section{Advanced Techniques}
+
+\subsection{Depthwise Separable Convolution}
+
+Factorizes standard convolution into:
+
+\textbf{Depthwise:}
+\begin{equation}
+Y^{(c)}_{i,j} = \sum_{m,n} X^{(c)}_{i+m,j+n} \cdot K^{(c)}_{m,n}
+\end{equation}
+
+\textbf{Pointwise:}
+\begin{equation}
+Z_{i,j} = \sum_c Y^{(c)}_{i,j} \cdot W^{(c)}
+\end{equation}
+
+Computational savings:
+\begin{equation}
+\frac{\text{Params}_{sep}}{\text{Params}_{std}} = \frac{K^2 + C_{out}}{K^2 \cdot C_{out}}
+\end{equation}
+
+\subsection{Squeeze-and-Excitation (SE) Block}
+
+Channel-wise attention:
+
+\begin{equation}
+s = \sigma(W_2 \cdot \delta(W_1 \cdot \text{GAP}(X)))
+\end{equation}
+
+\begin{equation}
+\tilde{X} = s \odot X
+\end{equation}
+
+where GAP is global average pooling and $\sigma$ is sigmoid.
+
+\section{Conclusion}
+
+CNNs have revolutionized computer vision through their ability to learn hierarchical feature representations. Understanding the mathematical foundations, architectural patterns, and optimization techniques is essential for designing effective CNN models for various applications.
+
+\section{References}
+
+\begin{enumerate}
+    \item LeCun, Y., et al. (1998). Gradient-based learning applied to document recognition.
+    \item Krizhevsky, A., et al. (2012). ImageNet classification with deep convolutional neural networks.
+    \item Simonyan, K., \& Zisserman, A. (2014). Very deep convolutional networks for large-scale image recognition.
+    \item He, K., et al. (2016). Deep residual learning for image recognition.
+    \item Szegedy, C., et al. (2015). Going deeper with convolutions.
+    \item Howard, A., et al. (2017). MobileNets: Efficient convolutional neural networks for mobile vision applications.
+\end{enumerate}
+
+\end{document}
